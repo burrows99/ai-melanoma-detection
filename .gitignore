@@ -34,8 +34,8 @@ ENV/
 .DS_Store
 
 # Data
-data/
-result/
+# data/
+# result/
 
 # Jupyter Notebook
 .ipynb_checkpoints
