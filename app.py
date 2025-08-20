@@ -338,4 +338,4 @@ with gr.Blocks(title="Improved Melanoma Detection Explainability") as iface:
 
 if __name__ == "__main__":
     # Launch the interface
-    iface.launch(share=False) 
+    iface.launch(server_name="0.0.0.0", server_port=7860, share=False) 

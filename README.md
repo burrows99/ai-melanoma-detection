@@ -2,7 +2,42 @@
 
 Deep learning model for melanoma detection from skin lesion images, incorporating patient metadata and Grad-CAM for explainability.
 
-## Setup
+## Docker Setup
+
+### Option 1: Using docker-compose (Recommended)
+
+1. **Build and run with GPU (requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)):**
+   ```bash
+   docker-compose up --build
+   ```
+
+2. **For CPU-only mode, uncomment the CPU-specific lines in `docker-compose.yml` and run:**
+   ```bash
+   docker-compose up --build
+   ```
+
+### Option 2: Manual Docker Commands
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t melanoma-detection .
+   ```
+
+2. **Run the container:**
+   - For CPU:
+     ```bash
+     docker run -p 7860:7860 -v $(pwd)/data:/app/data -v $(pwd)/result:/app/result melanoma-detection
+     ```
+   - For GPU:
+     ```bash
+     docker run -p 7860:7860 --gpus all -v $(pwd)/data:/app/data -v $(pwd)/result:/app/result melanoma-detection
+     ```
+
+The app will be available at `http://localhost:7860`
+- Mount your data directory to `/app/data`
+- Model weights will be saved to `/app/result`
+
+## Local Setup
 
 1.  **Environment:** Create a Python virtual environment and install dependencies:
     ```bash

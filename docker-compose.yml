@@ -1,0 +1,51 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      shm_size: '2gb'  # Increase shared memory for PyTorch
+    container_name: melanoma-detection
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./base:/app/base
+      - ./data:/app/data
+      - ./result:/app/result
+    environment:
+      - WANDB_MODE=disabled  # Disable Weights & Biases by default
+      - CUDA_VISIBLE_DEVICES=  # Empty string forces CPU mode
+    # GPU deploy section - commented out for CPU mode
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    # To run in CPU mode, use empty deploy section
+    deploy: {}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Jupyter Notebook service - temporarily disabled
+  # notebook:
+  #   build: 
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: melanoma-notebook
+  #   ports:
+  #     - "8888:8888"
+  #   volumes:
+  #     - ./base:/app/base
+  #     - ./data:/app/data
+  #     - ./result:/app/result
+  #     - .:/app/workspace
+  #   environment:
+  #     - JUPYTER_TOKEN=melanoma
+  #   command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token='melanoma'
+  #   restart: unless-stopped
