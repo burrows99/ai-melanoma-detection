@@ -1,0 +1,8 @@
+{
+    "name": "My Project",
+    "dockerComposeFile": ["../docker-compose.yml"],  // ❌ only works if it's outside .devcontainer
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    "postCreateCommand": "npm install"
+}
+  
