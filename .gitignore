@@ -33,15 +33,9 @@ ENV/
 *~
 .DS_Store
 
-# Data and models
+# Data
 data/
 result/
-*.pth
-*.pth.tar
-*.h5
-*.hdf5
-*.pt
-*.bin
 
 # Jupyter Notebook
 .ipynb_checkpoints
