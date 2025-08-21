@@ -62,7 +62,7 @@ flowchart TB
     IE --> C[Concat]
     ME --> C
     C --> H["Linear Head"]
-    H --> O["Logit → Sigmoid"]
+    H --> O["Logit -> Sigmoid"]
 ```
 
 ---
@@ -109,10 +109,10 @@ Fundamentals:
 Diagram: Training pipeline (Lightning)
 ```mermaid
 flowchart LR
-    DM[LightningDataModule] --> TR[Trainer]
-    LM[LightningModule] --> TR
-    TR -->|log| WB[W&B]
-    TR -->|checkpoint| CKPT[Best .pth]
+    DM["LightningDataModule"] --> TR["Trainer"]
+    LM["LightningModule"] --> TR
+    TR -->|log| WB["W&B"]
+    TR -->|checkpoint| CKPT["Best .pth"]
 ```
 
 ---
