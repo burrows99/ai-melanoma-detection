@@ -40,6 +40,54 @@ See `docs/README.md` for how to capture these screenshots.
 - `README.md`: Quick start and basic instructions.
 - `DOCUMENTATION.md`: This file.
 
+## Current Model Configuration
+
+- **Backbone architecture**: `efficientnet_b0`
+  - Set in `config.py`: `MODEL_ARCHITECTURE = 'efficientnet_b0'`
+  - Created in `model.py` `MetadataMelanomaModel` via `timm.create_model(MODEL_ARCHITECTURE, pretrained=True, num_classes=0)`
+
+- **Metadata branch (MLP)**: hidden dims `[128, 64]` with BatchNorm + ReLU; dropout between hidden layers
+  - Defined in `model.py` `MetadataMelanomaModel`
+
+- **Classifier head / output**: linear to `NUM_CLASSES = 1` (binary logit)
+  - `config.py`: `NUM_CLASSES = 1`
+  - `model.py`: `self.final_classifier = nn.Linear(..., NUM_CLASSES)`
+
+- **Activation usage**:
+  - Training: no activation (loss on raw logits)
+  - Inference: `sigmoid` to convert logit → probability
+    - `train.py`: threshold at 0.5 for predictions `(torch.sigmoid(outputs) > 0.5)`
+    - `evaluate.py`: `final_prob = torch.sigmoid(outputs).item()` and threshold 0.5
+    - `app.py`: `probability = torch.sigmoid(logits).item()`
+
+- **Loss function**: Focal Loss
+  - `model.py`: class `FocalLoss`
+  - `config.py`: `LOSS_FUNCTION_TYPE = 'FocalLoss'`, `FOCAL_LOSS_ALPHA = 0.864`, `FOCAL_LOSS_GAMMA = 2.0`, `FOCAL_LOSS_REDUCTION = 'mean'`
+  - Used via `model.py` `get_criterion()`
+
+- **Optimizer**: Adam
+  - `model.py` `get_optimizer()`: `torch.optim.Adam(model.parameters(), lr=learning_rate)`
+  - `config.py`: `LEARNING_RATE = 1e-4`
+
+- **Key hyperparameters** (from `config.py`):
+  - `BATCH_SIZE = 32`
+  - `NUM_EPOCHS = 20`
+  - `IMAGE_SIZE = 256`
+  - `DEVICE = 'cuda' if available else 'cpu'`
+
+- **Preprocessing / normalization**:
+  - Resize to `256x256`; ImageNet mean/std normalization
+  - See `app.py` transform and `dataset.py` for train/val transforms
+
+- **TTA (Test-Time Augmentation)**:
+  - App (`app.py`): PIL-based TTA (original, flips, rotations) averaged
+  - Eval (`evaluate.py`): optional tensor-based TTA (original + hflip) when enabled
+  - `config.py`: `TTA_ENABLED_EVAL = False` by default
+
+- **Checkpoints in use**:
+  - App loads `result/weights/gradcam.pth` (`app.py`: `CHECKPOINT_PATH`)
+  - Training saves best to `result/weights/{run_name}_best_ep{N}.pth` (`train.py`)
+
 ## Scripts in Detail
 
 ### `app.py`
