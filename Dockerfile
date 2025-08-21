@@ -18,8 +18,16 @@ RUN pip install --no-cache-dir --upgrade pip \
   && pip install --no-cache-dir -r requirements.txt \
   && pip install --no-cache-dir gunicorn uvicorn
 
-# Copy only necessary application code (avoid copying data/result/base which are mounted as volumes)
-COPY app.py config.py model.py dataset.py train.py evaluate.py ./
+# Copy only necessary application code (avoid copying large experiment artifacts)
+COPY app/ app/
+COPY configs/ configs/
+COPY models/ models/
+COPY data/ data/
+COPY training/ training/
+COPY eval/ eval/
+COPY utils/ utils/
+# Include only required weights
+COPY result/weights/ result/weights/
 
 # Create necessary directories
 RUN mkdir -p /app/result/weights
@@ -34,5 +42,5 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Expose the port the app runs on
 EXPOSE 7860
 
-# Start application
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--timeout", "120", "app:asgi_app"]
+# Start application (module path app.app:asgi_app)
+CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--timeout", "120", "app.app:asgi_app"]
