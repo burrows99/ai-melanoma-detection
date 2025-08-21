@@ -37,13 +37,25 @@ The app will be available at `http://localhost:7860`
 - Mount your data directory to `/app/data`
 - Model weights will be saved to `/app/result`
 
-## Local Setup
+## Local Setup (without Docker)
 
-1.  **Environment:** Create a Python virtual environment and install dependencies:
+The Docker workflow is recommended and already includes PyTorch from the base image `pytorch/pytorch`. PyTorch is intentionally NOT listed in `requirements.txt`.
+
+If you must run locally (no Docker), install PyTorch separately first, then install the rest of the requirements:
+
+1.  **Install PyTorch (choose one):**
+    ```bash
+    # CPU-only
+    pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cpu
+
+    # Or CUDA 11.7 (matches Dockerfile base image)
+    pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu117
+    ```
+
+2.  **Install project dependencies (excluding PyTorch):**
     ```bash
     pip install -r requirements.txt
     ```
-   *( PyTorch nightly build for 12.8 CUDA is used.)*
 
 2.  **Model Weights for `app.py`:**
     The Gradio application (`app.py`) expects pre-trained weights at `result/weights/gradcam.pth`. If training a new model, update this path in `app.py` or rename the saved model accordingly.

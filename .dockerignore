@@ -10,14 +10,51 @@ __pycache__/
 .Python
 build/
 *.egg-info/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Virtual Environment
 venv/
 env/
+ENV/
 
 # IDE
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Data - we're mounting these as volumes
+data/
+result/
+base/
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local development files
+local_settings.py
+docker-compose.override.yml
+
+# Documentation
+/docs/
+*.md
+!.github/
 *.swp
 *.swo
 *~

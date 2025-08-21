@@ -1,39 +1,38 @@
-# Use an official Python runtime as a parent image with Debian Bullseye for better compatibility
-FROM python:3.9-slim-bullseye
+FROM python:3.10-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# Install system dependencies
+# Install minimal system dependencies (for OpenCV and healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+    curl \
+    git \
     libgl1 \
     libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy only requirements first to leverage Docker cache
-COPY requirements.txt .
+# Install PyTorch (CPU builds) and project dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip \
+  && pip install --no-cache-dir \
+       torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 \
+  && pip install --no-cache-dir -r requirements.txt \
+  && pip install --no-cache-dir gunicorn uvicorn
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the application
+# Copy application code
 COPY . .
 
 # Create necessary directories
 RUN mkdir -p /app/result/weights
 
-# Download the model weights (uncomment and modify if you have a direct download link)
-# RUN wget -O /app/result/weights/gradcam.pth <YOUR_MODEL_WEIGHTS_URL>
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    GRADIO_SERVER_NAME=0.0.0.0 \
+    GRADIO_SERVER_PORT=7860
 
 # Expose the port the app runs on
 EXPOSE 7860
 
-# Command to run the application
-CMD ["python", "app.py"]
+# Start application
+CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--timeout", "120", "app:asgi_app"]

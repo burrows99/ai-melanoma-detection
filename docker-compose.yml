@@ -3,8 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      shm_size: '2gb'  # Increase shared memory for PyTorch
+      shm_size: '2gb'
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: melanoma-detection
+    restart: unless-stopped
     ports:
       - "7860:7860"
     volumes:
@@ -12,25 +15,25 @@ services:
       - ./data:/app/data
       - ./result:/app/result
     environment:
-      - WANDB_MODE=disabled  # Disable Weights & Biases by default
-      - CUDA_VISIBLE_DEVICES=  # Empty string forces CPU mode
-    # GPU deploy section - commented out for CPU mode
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-    # To run in CPU mode, use empty deploy section
-    deploy: {}
-    restart: unless-stopped
+      - WANDB_MODE=disabled
+      - PYTHONUNBUFFERED=1
+      - GRADIO_SERVER_NAME=0.0.0.0
+      - GRADIO_QUEUE=1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:7860"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+    # Uncomment for GPU support
+    # runtime: nvidia
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=all
 
   # Jupyter Notebook service - temporarily disabled
   # notebook:

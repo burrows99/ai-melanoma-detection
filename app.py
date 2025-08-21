@@ -336,6 +336,9 @@ with gr.Blocks(title="Improved Melanoma Detection Explainability") as iface:
         outputs=[prediction_output, gradcam_output, comparison_output]
     )
 
+# Expose a module-level ASGI app for Gunicorn/Uvicorn
+asgi_app = iface.app
+
 if __name__ == "__main__":
     # Launch the interface
-    iface.launch(server_name="0.0.0.0", server_port=7860, share=False) 
+    iface.launch(server_name="0.0.0.0", server_port=7860, share=False)
