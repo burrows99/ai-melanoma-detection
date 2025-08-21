@@ -173,6 +173,28 @@ sequenceDiagram
   Hm->>Img: Overlay heatmap
 ```
 
+### Why show heatmaps? (What/Why/How/Where/When)
+- What: class-relevance maps highlighting image regions most influential for the prediction.
+- Why: supports transparency, error analysis, and clinician trust; helps detect spurious cues (e.g., rulers, markers).
+- How: `pytorch-grad-cam` computes Grad-CAM/EigenCAM on selected CNN layers; see `app/app.py` for target-layer selection and overlay code.
+- Where: overlaid on the input image in the Gradio UI (`app/app.py`), also savable for reports.
+- When: during inference for a single image; optional in evaluation for qualitative review.
+
+Use-cases
+- Communicate model rationale to non-ML stakeholders (clinicians, reviewers).
+- Debug dataset/model issues (e.g., heat focusing on background artifact → revise aug/preprocess).
+- Compare layers/backbones to understand representation differences.
+
+Limitations
+- Coarse spatial resolution; not pixel-precise segmentation.
+- Sensitivity to chosen layer and model architecture; different layers yield different maps.
+- Attribution ≠ causation: a bright region is correlated, not guaranteed causal.
+
+Best practices
+- Cross-check multiple layers; prefer later convolutional blocks for semantics, earlier for detail.
+- Sanity-check with counterfactuals (e.g., crop out suspected artifact and re-run).
+- Pair with quantitative validation; do not rely on heatmaps alone for decisions.
+
 ---
 
 ## 7) Classification Details and Thresholding
