@@ -65,6 +65,35 @@ flowchart TB
     H --> O["Logit -> Sigmoid"]
 ```
 
+### Concatenation: when, how, and why
+- Where it happens (code): `models/model.py` → `MetadataMelanomaModel.forward()`
+  - `torch.cat((image_features, metadata_features), dim=1)` combines modality embeddings along feature dimension.
+  - Then `self.final_classifier(combined_features)` maps to a single logit.
+
+- Shapes (typical):
+  - `image_features`: `[B, F_img]` from `timm` backbone with `num_classes=0`.
+  - `metadata_features`: `[B, F_meta]` from the MLP.
+  - `combined`: `[B, F_img + F_meta]` after concatenation along `dim=1`.
+  - `logit`: `[B, 1]` via the linear head; sigmoid applied at inference for probability.
+
+- When during the pipeline:
+  - Training: each forward pass computes features → concatenation → logit; loss (e.g., BCE/Focal) is computed on logits.
+  - Inference (app): identical forward path; sigmoid converts the logit to probability for display.
+
+- Why concatenation:
+  - Simple and robust multimodal fusion when metadata is low-dimensional.
+  - Lets the classifier learn linear interactions between image and metadata features after a shared representation.
+
+- Alternatives (trade-offs):
+  - Attention/FiLM (feature-wise linear modulation): can model conditional effects of metadata on image features; adds complexity.
+  - Gating or multiplicative fusion: stronger interactions but higher sensitivity to scale/misalignment.
+  - Early fusion (append metadata to image pixels) is not appropriate; different modalities require separate encoders.
+
+- Common pitfalls:
+  - Dimension mismatch at `torch.cat` (ensure both are 2D `[B, F]`).
+  - Metadata normalization/encoding inconsistencies between train and app.
+  - Missing metadata at inference: define defaults or imputation strategy to keep feature dims consistent.
+
 ---
 
 ## 4) Losses and Metrics
