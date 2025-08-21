@@ -31,11 +31,11 @@ Fundamentals:
 Diagram: Minimal preprocessing flow
 ```mermaid
 flowchart LR
-    A[Raw image] --> B[Resize to IMAGE_SIZE]
-    B --> C[Normalize (ImageNet)]
-    C --> D[Tensor]
-    M[Metadata] --> E[Encode to numeric]
-    D --> F[Model]
+    A["Raw image"] --> B["Resize to IMAGE_SIZE"]
+    B --> C["Normalize (ImageNet)"]
+    C --> D["Tensor"]
+    M["Metadata"] --> E["Encode to numeric"]
+    D --> F["Model"]
     E --> F
 ```
 
@@ -57,9 +57,9 @@ Fundamentals:
 Diagram: Fusion
 ```mermaid
 flowchart TB
-    I[Image] -->|Backbone (timm)| IE[Img Embedding]
-    MD[Metadata] -->|MLP| ME[Meta Embedding]
-    IE --> C[Concat]
+    I["Image"] --> IE["Img Embedding"]
+    MD["Metadata"] --> ME["Meta Embedding"]
+    IE --> C["Concat"]
     ME --> C
     C --> H["Linear Head"]
     H --> O["Logit -> Sigmoid"]
