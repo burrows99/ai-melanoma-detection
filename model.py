@@ -1,39 +1,9 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F # Needed for Focal Loss
 import torchvision.models as models
 import timm
 # Using specific imports from config
-from config import MODEL_ARCHITECTURE, NUM_CLASSES, DEVICE, CLASS_WEIGHTS, LEARNING_RATE, LOSS_FUNCTION_TYPE, FOCAL_LOSS_ALPHA, FOCAL_LOSS_GAMMA, FOCAL_LOSS_REDUCTION
-
-# --- Focal Loss Implementation ---
-class FocalLoss(nn.Module):
-    """
-    Implementation of Focal Loss from Lin et al. (2017)
-    It measures the loss between raw logits (input) and binary targets.
-    """
-    def __init__(self, alpha=0.864, gamma=2.0, reduction='mean'):
-        super(FocalLoss, self).__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.reduction = reduction
-
-    def forward(self, inputs, targets):
-        BCE_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
-        pt = torch.exp(-BCE_loss) # Probability of the true class
-        
-        # Calculate a_t for alpha factor
-        # alpha_t = alpha if target = 1, (1-alpha) if target = 0
-        alpha_factor = targets * self.alpha + (1 - targets) * (1 - self.alpha)
-        
-        focal_loss = alpha_factor * (1 - pt)**self.gamma * BCE_loss
-
-        if self.reduction == 'mean':
-            return focal_loss.mean()
-        elif self.reduction == 'sum':
-            return focal_loss.sum()
-        else: # 'none'
-            return focal_loss
+from config import MODEL_ARCHITECTURE, NUM_CLASSES, DEVICE, LEARNING_RATE
 
 # --- Metadata Fusion Model ---
 class MetadataMelanomaModel(nn.Module):
@@ -93,10 +63,6 @@ def get_model(num_metadata_features):
     model = model.to(DEVICE)
     return model
 
-# --- Criterion and Optimizer Functions ---
-def get_criterion(loss_type=LOSS_FUNCTION_TYPE):
-    # malignant proportion = 0.136, so alpha_pos=0.864
-    return FocalLoss(alpha=FOCAL_LOSS_ALPHA, gamma=FOCAL_LOSS_GAMMA, reduction=FOCAL_LOSS_REDUCTION)
-
+# --- Optimizer Function ---
 def get_optimizer(model, learning_rate=LEARNING_RATE):
     return torch.optim.Adam(model.parameters(), lr=learning_rate) 

@@ -7,7 +7,8 @@ import wandb
 from torch.utils.data import DataLoader
 from config import * # Imports DEVICE, TTA_ENABLED_EVAL, etc.
 from dataset import get_data_loaders # get_image_transforms is used in evaluate.py now
-from model import get_model, get_criterion, get_optimizer
+from model import get_model, get_optimizer
+from losses import get_criterion
 # Import functions from the new evaluate.py
 from evaluate import evaluate, plot_roc_curve, plot_confusion_matrix
 
