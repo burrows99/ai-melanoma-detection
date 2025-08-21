@@ -18,8 +18,8 @@ RUN pip install --no-cache-dir --upgrade pip \
   && pip install --no-cache-dir -r requirements.txt \
   && pip install --no-cache-dir gunicorn uvicorn
 
-# Copy application code
-COPY . .
+# Copy only necessary application code (avoid copying data/result/base which are mounted as volumes)
+COPY app.py config.py model.py dataset.py train.py evaluate.py ./
 
 # Create necessary directories
 RUN mkdir -p /app/result/weights
