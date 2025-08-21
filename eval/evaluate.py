@@ -1,25 +1,15 @@
 import torch
 import numpy as np
-from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_curve, auc, confusion_matrix
+from sklearn.metrics import roc_curve, auc, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
-from PIL import Image 
-import torchvision.transforms as T
 
 
-from config import DEVICE # Evaluate function will need DEVICE for moving data
-from dataset import get_image_transforms # For val_transforms
-
-# --- TTA Transformations (PIL based) ---
-tta_transforms_pil = {
-    'original': lambda img: img,
-    'hflip': lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),
-    'vflip': lambda img: img.transpose(Image.FLIP_TOP_BOTTOM),
-    'rot90': lambda img: img.rotate(90, expand=False),
-    'rot180': lambda img: img.rotate(180, expand=False),
-    'rot270': lambda img: img.rotate(270, expand=False),
-}
+from configs.config import DEVICE # Evaluate function will need DEVICE for moving data
+from data.dataset import get_image_transforms # For val_transforms
+from utils.tta import get_basic_tensor_tta_transforms
+from utils.activations import sigmoid_prob, binarize_probs
 val_transforms = get_image_transforms(train=False) # Get validation transforms once
 
 def evaluate(model, val_loader, criterion, use_tta=False):
@@ -41,32 +31,24 @@ def evaluate(model, val_loader, criterion, use_tta=False):
 
                 if use_tta:
                     tta_probs_for_image = []
-                    
-                    # 1. Original prediction
-                    # Ensure tensor is on the correct device before model call
-                    outputs = model(original_image_tensor_single.unsqueeze(0).to(DEVICE), current_metadata_single)
-                    prob = torch.sigmoid(outputs).item()
-                    tta_probs_for_image.append(prob)
-
-                    # 2. Horizontal Flip (Tensor-based)
-                    hflip_tensor = T.functional.hflip(original_image_tensor_single)
-                    outputs_hflip = model(hflip_tensor.unsqueeze(0).to(DEVICE), current_metadata_single)
-                    prob_hflip = torch.sigmoid(outputs_hflip).item()
-                    tta_probs_for_image.append(prob_hflip)
-                    
-                    # (Placeholder for more tensor-based TTA if desired in the future)
-
-                    final_prob = np.mean(tta_probs_for_image)
-                    # Loss on original prediction for consistency
+                    outputs = None
+                    for tta_fn in get_basic_tensor_tta_transforms():
+                        aug_t = tta_fn(original_image_tensor_single)
+                        out = model(aug_t.unsqueeze(0).to(DEVICE), current_metadata_single)
+                        # Keep first output for loss calculation consistency
+                        if outputs is None:
+                            outputs = out
+                        tta_probs_for_image.append(sigmoid_prob(out))
+                    final_prob = float(np.mean(tta_probs_for_image))
                     loss = criterion(outputs, labels_batch[i:i+1].unsqueeze(1).float().to(DEVICE))
                 else:
                     outputs = model(original_image_tensor_single.unsqueeze(0).to(DEVICE), current_metadata_single)
                     loss = criterion(outputs, labels_batch[i:i+1].unsqueeze(1).float().to(DEVICE))
-                    final_prob = torch.sigmoid(outputs).item()
+                    final_prob = sigmoid_prob(outputs)
                 
                 total_loss += loss.item()
                 all_probs_final.append(final_prob)
-                all_preds_final.append(1 if final_prob > 0.5 else 0)
+                all_preds_final.append(binarize_probs(final_prob, threshold=0.5))
 
     avg_loss = total_loss / len(all_labels_final) if len(all_labels_final) > 0 else 0
     return avg_loss, all_preds_final, all_labels_final, all_probs_final

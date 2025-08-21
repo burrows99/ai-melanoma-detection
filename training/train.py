@@ -1,16 +1,17 @@
 import torch
 import numpy as np
-from sklearn.metrics import accuracy_score, recall_score, f1_score # Keep only necessary metrics here
 from tqdm import tqdm
 import os
 import wandb
 from torch.utils.data import DataLoader
-from config import * # Imports DEVICE, TTA_ENABLED_EVAL, etc.
-from dataset import get_data_loaders # get_image_transforms is used in evaluate.py now
-from model import get_model, get_optimizer
-from losses import get_criterion
+from configs.config import * # Imports DEVICE, TTA_ENABLED_EVAL, etc.
+from data.dataset import get_data_loaders # get_image_transforms is used in evaluate.py now
+from models.model import get_model, get_optimizer
+from models.losses import get_criterion
+from utils.activations import sigmoid_prob, binarize_probs
+from utils.metrics import compute_classification_metrics
 # Import functions from the new evaluate.py
-from evaluate import evaluate, plot_roc_curve, plot_confusion_matrix
+from eval.evaluate import evaluate, plot_roc_curve, plot_confusion_matrix
 
 # --- TTA Transformations and val_transforms are now in evaluate.py ---
 
@@ -35,8 +36,13 @@ def train_epoch(model, train_loader, criterion, optimizer):
         optimizer.step()
         
         total_loss += loss.detach().item()
-        preds = (torch.sigmoid(outputs.detach()) > 0.5).int()
-        all_preds.extend(preds.cpu().numpy().flatten()) # Flatten in case of shape [N, 1]
+        probs = sigmoid_prob(outputs.detach())
+        preds = binarize_probs(probs, threshold=0.5)
+        # Ensure numpy flatten for both tensor and list cases
+        if hasattr(preds, 'cpu'):
+            all_preds.extend(preds.cpu().numpy().flatten())
+        else:
+            all_preds.extend(np.array(preds).flatten())
         all_labels.extend(labels.cpu().numpy().flatten())
     
     return total_loss / len(train_loader), all_preds, all_labels
@@ -102,12 +108,10 @@ def train_model():
         val_loss, val_preds, val_labels, val_probs = evaluate(model, val_loader, criterion, use_tta=TTA_ENABLED_EVAL)
         
         # -- Calculate Metrics --
-        train_acc = accuracy_score(train_labels, train_preds)
-        train_recall = recall_score(train_labels, train_preds)
-        train_f1 = f1_score(train_labels, train_preds)
-        val_acc = accuracy_score(val_labels, val_preds)
-        val_recall = recall_score(val_labels, val_preds)
-        val_f1 = f1_score(val_labels, val_preds)
+        train_metrics = compute_classification_metrics(train_labels, train_preds)
+        val_metrics = compute_classification_metrics(val_labels, val_preds)
+        train_acc = train_metrics["accuracy"]; train_recall = train_metrics["recall"]; train_f1 = train_metrics["f1"]
+        val_acc = val_metrics["accuracy"]; val_recall = val_metrics["recall"]; val_f1 = val_metrics["f1"]
         
         # -- Logging to W&B and Console --
         log_dict = {
@@ -181,5 +185,11 @@ def train_model():
     wandb.finish()
 
 if __name__ == "__main__":
-    # TTA_ENABLED_EVAL is imported from config.py and its status will be in wandb logs.
-    train_model() 
+    # Deprecation notice: use Lightning entrypoint
+    print("[DEPRECATION] train.py legacy loop is deprecated. Delegating to Lightning trainer (pl_train.py).")
+    try:
+        from training.pl_train import main as pl_main
+        pl_main()
+    except Exception as e:
+        print("Failed to run Lightning trainer. Error:\n", e)
+        print("You can still invoke the legacy loop by calling train_model() manually, but this is discouraged.")

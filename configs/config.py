@@ -1,0 +1,47 @@
+# --- Configuration File ---
+
+import torch
+import os
+from configs.settings import Settings
+
+# Load settings from environment-friendly Pydantic model
+_S = Settings()
+
+# --- Core Training Parameters ---
+MODEL_ARCHITECTURE = _S.MODEL_ARCHITECTURE
+NUM_CLASSES = _S.NUM_CLASSES
+LEARNING_RATE = _S.LEARNING_RATE
+BATCH_SIZE = _S.BATCH_SIZE
+NUM_EPOCHS = _S.NUM_EPOCHS
+IMAGE_SIZE = _S.IMAGE_SIZE
+
+# --- Metadata Configuration ---
+USE_METADATA = _S.USE_METADATA
+METADATA_COLS = _S.METADATA_COLS
+NUMERICAL_COLS = _S.NUMERICAL_COLS
+CATEGORICAL_COLS = _S.CATEGORICAL_COLS
+
+# --- Dataset Paths ---
+TRAIN_DATA_DIR = _S.TRAIN_DATA_DIR
+TRAIN_LABELS_PATH = _S.TRAIN_LABELS_PATH
+
+# --- Class Imbalance Handling ---
+CLASS_WEIGHTS = _S.CLASS_WEIGHTS
+LOSS_FUNCTION_TYPE = _S.LOSS_FUNCTION_TYPE
+FOCAL_LOSS_ALPHA = _S.FOCAL_LOSS_ALPHA
+FOCAL_LOSS_GAMMA = _S.FOCAL_LOSS_GAMMA
+FOCAL_LOSS_REDUCTION = _S.FOCAL_LOSS_REDUCTION
+
+# --- Data Augmentation Parameters ---
+AUGMENTATION = _S.AUGMENTATION
+
+# --- Training Setup ---
+TRAIN_SPLIT = _S.TRAIN_SPLIT
+RANDOM_SEED = _S.RANDOM_SEED
+NUM_WORKERS = _S.NUM_WORKERS
+
+# --- Device Configuration ---
+DEVICE = _S.DEVICE
+
+# --- Test Time Augmentation (TTA) for Evaluation ---
+TTA_ENABLED_EVAL = _S.TTA_ENABLED_EVAL

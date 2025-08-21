@@ -22,5 +22,9 @@ pandas==2.0.3
 # tqdm==4.65.0
 # wandb==0.15.8
 
+# Training framework and metrics
+pytorch-lightning==2.3.2
+torchmetrics==1.4.0
+
 # Explainability
 git+https://github.com/jacobgil/pytorch-grad-cam.git@master

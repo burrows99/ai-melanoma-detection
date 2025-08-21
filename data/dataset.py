@@ -11,11 +11,11 @@ from sklearn.impute import SimpleImputer
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+# Use timm factory transforms to standardize preprocessing/augs
+from timm.data import create_transform
 
 # Import necessary configurations only
-from config import (
+from configs.config import (
     IMAGE_SIZE, AUGMENTATION, TRAIN_LABELS_PATH, TRAIN_DATA_DIR, 
     TRAIN_SPLIT, RANDOM_SEED, BATCH_SIZE, NUM_WORKERS, DEVICE
 )
@@ -58,65 +58,15 @@ class MelanomaDataset(Dataset):
             
         return image, metadata, label
 
-# --- Albumentations Transform Class (for pickling with multiprocessing) ---
-class AlbumentationsTrainTransform:
-    def __init__(self):
-        # Normalize is a torchvision transform, applied after ToTensorV2
-        self.normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                                            std=[0.229, 0.224, 0.225])
-        # Albumentations pipeline
-        self.alb_transforms = A.Compose([
-            A.Resize(IMAGE_SIZE, IMAGE_SIZE), # Ensure consistent size
-            A.HorizontalFlip(p=AUGMENTATION.get('horizontal_flip_prob', 0.5)),
-            A.VerticalFlip(p=AUGMENTATION.get('vertical_flip_prob', 0.5)),
-            A.ShiftScaleRotate(
-                shift_limit=0.0625, 
-                scale_limit=0.15, 
-                rotate_limit=AUGMENTATION.get('rotation', 20), 
-                p=0.75,
-                border_mode=0 
-            ),
-            A.RandomRotate90(p=0.5),
-            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.75),
-            A.HueSaturationValue(hue_shift_limit=15, sat_shift_limit=25, val_shift_limit=15, p=0.5),
-            A.CLAHE(clip_limit=2.0, tile_grid_size=(8, 8), p=0.3),
-            A.OneOf([
-                A.GaussianBlur(blur_limit=(3, 7), p=0.5),
-                A.MedianBlur(blur_limit=5, p=0.5),
-            ], p=0.3),
-            A.CoarseDropout(
-                max_holes=8, max_height=IMAGE_SIZE//8, max_width=IMAGE_SIZE//8, 
-                min_holes=1, min_height=IMAGE_SIZE//16, min_width=IMAGE_SIZE//16, 
-                fill_value=0, 
-                p=0.5
-            ),
-            ToTensorV2()
-        ])
-
-    def __call__(self, pil_img):
-        np_img = np.array(pil_img)
-        augmented = self.alb_transforms(image=np_img) 
-        img_tensor = augmented['image'] # Output from ToTensorV2 is CHW torch.uint8 tensor [0-255]
-        
-        # Convert tensor to float and scale to [0.0, 1.0] range before applying normalization
-        img_tensor = img_tensor.float() / 255.0 
-        
-        return self.normalize(img_tensor)
-
 # --- Transformations (Image) ---
 def get_image_transforms(train=True):
     """Get image transformation pipeline."""
-    if train:
-        return AlbumentationsTrainTransform() # Uses the custom class with Albumentations
-    else:
-        # Validation/Test: Uses simpler torchvision transforms
-        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                                         std=[0.229, 0.224, 0.225])
-        return transforms.Compose([
-            transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-            transforms.ToTensor(), # Converts PIL HWC [0-255] uint8 to CHW [0.0-1.0] float32 tensor
-            normalize
-        ])
+    # timm.create_transform returns a torchvision transform pipeline
+    return create_transform(
+        input_size=(3, IMAGE_SIZE, IMAGE_SIZE),
+        is_training=train,
+        # You can map AUGMENTATION config to timm args if desired; keep defaults for now
+    )
 
 # --- Metadata Preprocessor ---
 def get_metadata_preprocessor(train_df):

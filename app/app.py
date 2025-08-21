@@ -2,24 +2,27 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image
-import torchvision.transforms as T
 import gradio as gr
 import pandas as pd
 import math
 import torchvision.transforms.functional as TF
+from timm.data import create_transform
 
 # Import existing model architecture
-from model import get_model
-from config import DEVICE
+from models.model import get_model
+from configs.config import DEVICE, IMAGE_SIZE
 
 # GradCAM imports
 from pytorch_grad_cam import EigenCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.utils.image import show_cam_on_image
 
+# Utility imports for SOLID/modularity
+from utils.tta import get_pil_tta_transforms
+from utils.activations import sigmoid_prob
+
 # Configuration
 CHECKPOINT_PATH = 'result/weights/gradcam.pth' 
-IMAGE_SIZE = 256  
 
 # Metadata defaults (for standalone predictions)
 DEFAULT_METADATA = {
@@ -79,24 +82,16 @@ def get_target_layers(m):
 target_layers = get_target_layers(model)
 
 # --- TTA Transformations ---
-# Define TTA transformations as lambdas for PIL Images
-tta_transforms_pil = {
-    'original': lambda img: img,
-    'hflip': lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),
-    'vflip': lambda img: img.transpose(Image.FLIP_TOP_BOTTOM),
-    'rot90': lambda img: img.rotate(90, expand=True), # expand=True to avoid cropping
-    'rot180': lambda img: img.rotate(180, expand=True),
-    'rot270': lambda img: img.rotate(270, expand=True),
-}
+# Centralized definitions from utils
+tta_transforms_pil = get_pil_tta_transforms()
 # Note: Rotation might change aspect ratio if expand=True. If model expects square,
 
 
-# Set up preprocessing
-transform = T.Compose([
-    T.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-    T.ToTensor(),
-    T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+# Set up preprocessing (consistent with dataset.py)
+transform = create_transform(
+    input_size=(3, IMAGE_SIZE, IMAGE_SIZE),
+    is_training=False,
+)
 
 # Helper to prepare metadata input
 def prepare_metadata(age=None, sex=None, site=None):

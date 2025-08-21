@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # Config-driven loss parameters
-from config import (
+from configs.config import (
     LOSS_FUNCTION_TYPE,
     FOCAL_LOSS_ALPHA,
     FOCAL_LOSS_GAMMA,

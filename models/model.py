@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision.models as models
 import timm
 # Using specific imports from config
-from config import MODEL_ARCHITECTURE, NUM_CLASSES, DEVICE, LEARNING_RATE
+from configs.config import MODEL_ARCHITECTURE, NUM_CLASSES, DEVICE, LEARNING_RATE
 
 # --- Metadata Fusion Model ---
 class MetadataMelanomaModel(nn.Module):
