@@ -5,16 +5,22 @@
 ## 1) Project Overview
 
 - Goal: Assistive melanoma detection from dermoscopy images with patient metadata.
+  - Image + metadata fusion improves performance over image-only.
 - Outputs: Probability of malignancy + Grad-CAM heatmaps.
-- Non-diagnostic. For research/education and triage support only.
+  - Heatmaps help users understand which regions influenced the model.
+- Scope: Non-diagnostic; designed for research/education and triage support.
+  - Supports reproducible experiments and explainability.
 
 ---
 
 ## 2) Why This Matters
 
 - Melanoma is lethal when missed; early detection improves outcomes.
+  - Sensitivity (recall) is critical to reduce false negatives.
 - Assist clinicians with prioritization and visual explanations.
+  - Highlighting suspicious regions builds user trust and aids review.
 - Standardized pipeline enables reproducible model comparisons.
+  - Consistent preprocessing, metrics, and logging across backbones.
 
 ---
 
@@ -30,6 +36,7 @@
   - `data/dataset.py`
 - Eval + Explainability: ROC/CM utilities + Grad-CAM (EigenCAM)
   - `eval/evaluate.py`, `app/app.py`
+  - TorchMetrics for accuracy, recall, F1; optional TTA.
 
 ---
 
@@ -37,8 +44,11 @@
 
 - Image: RGB dermoscopy preprocessed to `IMAGE_SIZE` (default 256).
 - Metadata: `age_approx`, `sex`, `anatom_site_general_challenge`.
+  
 - Augmentations: Provided by `timm` transforms (train/val consistency).
+  - Reduces overfitting; preserves lesion characteristics.
 - TTA: Optional at eval; PIL-based in app.
+  - Increases robustness by averaging predictions over simple flips/rotations.
 
 ---
 
@@ -47,7 +57,9 @@
 - Image branch: EfficientNet-B0/DenseNet121/ResNet50 backbones (timm, pretrained, num_classes=0).
 - Metadata branch: MLP with BN+ReLU and dropout between hidden layers.
 - Fusion: Concatenate image + metadata embeddings → Linear head to 1 logit.
+  - Keeps architecture simple and efficient while leveraging both modalities.
 - Loss: FocalLoss (configurable α, γ, reduction).
+  - Mitigates class imbalance by down-weighting easy negatives.
 
 ---
 
@@ -55,6 +67,7 @@
 
 - Optimizer: Adam, LR from `configs/config.py`.
 - Metrics: BinaryAccuracy, BinaryRecall, BinaryF1 (TorchMetrics).
+  - Computed on probabilities with 0.5 threshold; monitor `val/f1`.
 - Checkpointing: best `val/f1` via ModelCheckpoint.
 - Logging: Weights & Biases (project: melanoma-classification).
 
@@ -71,7 +84,19 @@ Source: `base/*/metrics`
 - ResNet-50
   - Acc 96.25% | Recall 90.01% | F1 86.69% | Loss 0.2757
 
-Notes: Train metrics ~99% across models suggest potential overfitting; regularization and threshold tuning remain important.
+Notes:
+- Train metrics ~99% across models suggest potential overfitting; regularization and threshold tuning remain important.
+- Consider per-model threshold optimization to match clinical sensitivity targets.
+
+---
+
+## 7.1) Metric Definitions (for clarity)
+
+- Accuracy: Fraction of correct predictions over all cases. Can be misleading with imbalance.
+- Recall (Sensitivity): Fraction of melanomas correctly identified. High recall = fewer missed cancers.
+- Precision: Fraction of positive predictions that are correct. Higher precision = fewer false alarms.
+- F1 Score: Harmonic mean of precision and recall. Balances missed cancers vs. false alarms.
+- Loss: Optimization objective (BCE/Focal). Lower is better but interpret with F1/recall.
 
 ---
 
@@ -80,12 +105,15 @@ Notes: Train metrics ~99% across models suggest potential overfitting; regulariz
 - EfficientNet-B0
   - Pros: Best F1/accuracy balance, low latency, small footprint.
   - Cons: Slightly lower recall than ResNet-50 in this snapshot.
+  - When to use: Default deployment; resource-constrained environments; fast iteration.
 - DenseNet-121
   - Pros: Competitive loss; strong representation in medical imaging.
   - Cons: Heavier; marginal improvements vs B0 not evident.
+  - When to use: If dataset-specific gains emerge; otherwise B0 is simpler.
 - ResNet-50
   - Pros: Highest recall (fewer false negatives).
   - Cons: Lower F1/accuracy; heavier; may need more tuning.
+  - When to use: Sensitivity-first screening with threshold tuning/class weighting.
 
 ---
 
@@ -95,7 +123,7 @@ Notes: Train metrics ~99% across models suggest potential overfitting; regulariz
   - Rationale: Best overall F1/accuracy with efficient runtime and simple deployment.
   - Practical: Stable pretrained weights; CPU-friendly for Docker + Gradio.
 - Alternate (sensitivity-first): ResNet-50 + threshold tuning/class weighting.
-
+  
 ---
 
 ## 10) Inference & Explainability
@@ -104,6 +132,7 @@ Notes: Train metrics ~99% across models suggest potential overfitting; regulariz
   - Single-image upload + metadata inputs.
   - Probability output, Grad-CAM heatmaps, side-by-side visualization.
 - Explainability: EigenCAM via `pytorch-grad-cam`.
+  - Layer selection influences spatial detail vs. semantics.
 
 ---
 
@@ -112,6 +141,7 @@ Notes: Train metrics ~99% across models suggest potential overfitting; regulariz
 - `configs/settings.py`: Pydantic settings, .env support.
 - `configs/config.py`: Backward-compatible constants.
 - Determinism flag in Lightning trainer; seeds in dataset split.
+  - Environment-variable overrides via Pydantic settings with `.env` support.
 
 ---
 

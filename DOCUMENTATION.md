@@ -13,19 +13,29 @@ We evaluated multiple backbones with the same metadata fusion head and consisten
 - **ResNet-50** (`base/res50_1/metrics`)
   - Acc: 96.25% | Recall: 90.01% | F1: 86.69% | Loss: 0.2757
 
-Notes: Train metrics are very high for all models (≈99% acc), suggesting potential overfitting mitigated by metadata fusion and regularization.
+Notes:
+
+- Train metrics are very high for all models (≈99% acc), which can indicate overfitting; we mitigate with regularization, careful transforms, and monitoring `val/f1`.
+- What these metrics mean in our clinical context:
+  - Accuracy: Overall correctness. Can be misleading if classes are imbalanced.
+  - Recall (Sensitivity): Fraction of melanomas correctly detected. Clinically important to minimize false negatives.
+  - F1 score: Harmonic mean of precision and recall. Balances missed melanomas (FN) vs. false alarms (FP).
+  - Loss: Optimization objective; lower is better but should be considered with F1/recall.
 
 ### Trade-offs
 
 - **EfficientNet-B0**
   - Pros: Strong accuracy/F1, lightweight, fast inference, widely available pretrained weights.
   - Cons: Slightly lower recall than ResNet-50 in this run.
+  - When to prefer: Default choice for balanced performance and efficient deployment (CPU-friendly Docker, faster iteration).
 - **DenseNet-121**
   - Pros: Competitive validation loss; robust features for medical imaging.
   - Cons: Heavier than B0; similar recall to B0, marginal overall gains.
+  - When to prefer: If slight improvements on specific datasets appear with DenseNet features; otherwise B0 offers similar outcomes with less compute.
 - **ResNet-50**
   - Pros: Highest recall in this snapshot (reduces false negatives).
   - Cons: Lower F1/accuracy; heavier than B0; may be more sensitive to augmentation choices.
+  - When to prefer: Settings prioritizing sensitivity (screening) where missing a melanoma is costlier than increasing false positives; pair with threshold tuning.
 
 ### Final Model Choice and Justification
 
@@ -34,6 +44,7 @@ We select **EfficientNet-B0 + Metadata MLP** as the default backbone for deploym
 - Best balance of validation F1 and accuracy with efficient compute and latency.
 - Stable training with `timm` pretrained weights; fewer parameters than DenseNet/ResNet.
 - Easier to optimize and deploy broadly (CPU-friendly), aligning with our Gradio + Docker serving setup.
+- Operationally simple: faster experimentation cycles and lower serving costs without sacrificing decision quality.
 
 If the clinical priority is to maximize sensitivity (recall), consider a ResNet-50 variant with threshold tuning and/or class weighting; however, overall decision-quality (F1) and operational efficiency favored EfficientNet-B0.
 
