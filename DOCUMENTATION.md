@@ -1,3 +1,11 @@
+- **Classification task & classes**:
+  - Binary classification with sigmoid output.
+  - Positive class (label=1): melanoma (malignant).
+  - Negative class (label=0): benign/non-melanoma.
+  - Default decision threshold: 0.5 on the sigmoid probability.
+  - Threshold can be tuned for higher recall (sensitivity) in screening contexts.
+  - Class imbalance mitigations: FocalLoss with configurable `alpha` and `gamma` (see `configs/config.py`); alternatives include weighted sampling or class-weighted BCE.
+
 - If you change configuration via environment variables, `configs/settings.py` (Pydantic) will pick them up automatically (supports `.env`).
 
 ## Model Variants, Metrics, Trade-offs, and Final Choice

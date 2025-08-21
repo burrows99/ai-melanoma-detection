@@ -52,6 +52,20 @@
 
 ---
 
+## 4.1) Classification Task & Classes
+
+- Task: Binary classification
+  - Positive class (label=1): Melanoma (malignant)
+  - Negative class (label=0): Benign/non-melanoma
+- Thresholding
+  - Default decision threshold at 0.5 on sigmoid probability
+  - Can tune threshold to increase recall (sensitivity) for screening
+- Class imbalance
+  - Handled via FocalLoss; supports α (class weight) and γ (focusing) from `configs/config.py`
+  - Alternative options: weighted sampler, class weights in loss, or oversampling
+
+---
+
 ## 5) Model Design (Fusion)
 
 - Image branch: EfficientNet-B0/DenseNet121/ResNet50 backbones (timm, pretrained, num_classes=0).
