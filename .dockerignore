@@ -70,6 +70,11 @@ result/
 *.pt
 *.bin
 
+# --- Allow Grad-CAM demo weights to be included in Docker context ---
+!result/
+!result/weights/
+!result/weights/gradcam.pth
+
 # Jupyter Notebook
 .ipynb_checkpoints
 
