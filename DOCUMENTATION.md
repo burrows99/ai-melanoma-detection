@@ -123,10 +123,12 @@ See `docs/README.md` for how to capture these screenshots.
     - `training/pl_module.py`: applies `sigmoid` to logits for metrics; threshold 0.5
     - `eval/evaluate.py`: computes probabilities per image and thresholds at 0.5
     - `app/app.py`: uses `sigmoid` for probabilities in the UI
+  - Fundamentals: a logit is an unbounded score; the sigmoid squashes it to p ∈ (0,1). We predict melanoma when p ≥ threshold (default 0.5). Lowering the threshold increases recall but may reduce precision.
 
 - **Loss function**: Focal Loss
   - `models/losses.py`: class `FocalLoss` and `get_criterion()`
   - `configs/config.py`: `LOSS_FUNCTION_TYPE`, `FOCAL_LOSS_ALPHA`, `FOCAL_LOSS_GAMMA`, `FOCAL_LOSS_REDUCTION`
+  - Fundamentals: Focal Loss modifies cross-entropy to focus learning on hard or minority examples. The focusing term γ (>0) down-weights easy samples; α ∈ [0,1] rebalances class contributions (useful with class imbalance).
 
 - **Optimizer**: Adam
   - `models/model.py` `get_optimizer()`: `torch.optim.Adam(model.parameters(), lr=learning_rate)`
@@ -234,6 +236,7 @@ See `docs/README.md` for how to capture these screenshots.
 - The app computes a class-agnostic activation map over the selected CNN layer.
 - Heatmap is overlaid on the input image to highlight regions most influential for feature extraction.
 - Earlier layers tend to show more spatial detail; later layers (e.g., `conv_head`) show higher-level semantics.
+ - Fundamentals: Grad-CAM weighs feature maps by the gradient of the target with respect to those maps, producing a coarse localization heatmap. EigenCAM is a variant that uses principal components of activations for stable, class-agnostic maps.
 
 ## Notes & Tips
 - First launch downloads backbone weights into the container cache; subsequent runs are faster.

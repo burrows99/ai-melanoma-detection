@@ -2,6 +2,17 @@
 
 ---
 
+## 10.1) Grad-CAM Basics (Fundamentals)
+
+- Idea: Use gradients of the target w.r.t. feature maps to weight activations and produce a heatmap.
+- Interpretation: Highlights regions that contributed most to features for the chosen layer.
+- Layer choice:
+  - Early layers: finer spatial detail, lower semantics.
+  - Late layers: coarser spatial map, higher-level semantics.
+- In app: Select layer; we use EigenCAM variant from `pytorch-grad-cam`.
+
+---
+
 ## 1) Project Overview
 
 - Goal: Assistive melanoma detection from dermoscopy images with patient metadata.
@@ -77,6 +88,17 @@
 
 ---
 
+## 5.1) Focal Loss (Fundamentals)
+
+- What: Modified cross-entropy that down-weights easy examples and focuses on hard ones.
+- Why: Helps with class imbalance and hard-positive mining common in medical imaging.
+- How:
+  - Focusing parameter γ (>0) reduces loss for well-classified samples.
+  - Class weight α ∈ [0,1] rebalances minority/majority classes.
+  - Both are configurable in `configs/config.py`.
+
+---
+
 ## 6) Training Setup (Lightning)
 
 - Optimizer: Adam, LR from `configs/config.py`.
@@ -84,6 +106,15 @@
   - Computed on probabilities with 0.5 threshold; monitor `val/f1`.
 - Checkpointing: best `val/f1` via ModelCheckpoint.
 - Logging: Weights & Biases (project: melanoma-classification).
+
+---
+
+## 6.1) Sigmoid, Logit, and Thresholding (Fundamentals)
+
+- Logit: Raw model output (unbounded real number).
+- Sigmoid: Maps logit → probability p ∈ (0,1): `p = 1 / (1 + e^-logit)`.
+- Decision rule: Positive if `p ≥ threshold` (default 0.5).
+- Tuning threshold: Increase recall by lowering threshold; evaluate precision-recall trade-offs.
 
 ---
 
