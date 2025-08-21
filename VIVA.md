@@ -61,8 +61,8 @@ flowchart TB
     MD[Metadata] -->|MLP| ME[Meta Embedding]
     IE --> C[Concat]
     ME --> C
-    C --> H[Linear Head]
-    H --> O[Logit -> Sigmoid]
+    C --> H["Linear Head"]
+    H --> O["Logit → Sigmoid"]
 ```
 
 ---
@@ -280,9 +280,9 @@ Input (3xHxW) → Conv(3→16,k3) → ReLU → MaxPool → Conv(16→32,k3) → 
 Mermaid: threshold sweep concept
 ```mermaid
 flowchart LR
-  T1[thr=0.3] --> M1[High recall\nLower precision]
-  T2[thr=0.5] --> M2[Balanced]
-  T3[thr=0.7] --> M3[Higher precision\nLower recall]
+  T1["thr=0.3"] --> M1["High recall<br/>Lower precision"]
+  T2["thr=0.5"] --> M2["Balanced"]
+  T3["thr=0.7"] --> M3["Higher precision<br/>Lower recall"]
 ```
 
 ### 14.7) Cross-validation and uncertainty
