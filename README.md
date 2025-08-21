@@ -64,15 +64,14 @@ The app will be available at `http://localhost:7860`
 
 ## Data Requirements
 
-- Images: RGB dermoscopy photos (common formats: JPG/PNG). Default preprocessing resizes to `IMAGE_SIZE` from `config.py` (256x256 in `app.py`).
+- Images: RGB dermoscopy photos (common formats: JPG/PNG). Default preprocessing resizes to `IMAGE_SIZE` from `configs/settings.py` (256x256 in `app.py`).
 - Optional metadata fields: `age_approx`, `sex`, `anatom_site_general_challenge`. Missing fields fall back to defaults inside `app.py`.
-- Training labels: see `config.py` for `TRAIN_LABELS_PATH` CSV expectations.
+- Training labels: see `configs/config.py` for `TRAIN_LABELS_PATH` CSV expectations.
 
 ## Local Setup (without Docker)
 
 The Docker workflow is recommended and already includes PyTorch CPU in the image. PyTorch is intentionally NOT listed in `requirements.txt`.
 
-If you must run locally (no Docker), install PyTorch separately first, then install the rest of the requirements:
 
 1.  **Install PyTorch (choose one):**
     ```bash
@@ -100,37 +99,44 @@ If you must run locally (no Docker), install PyTorch separately first, then inst
 
 To launch the Gradio interface for inference and Grad-CAM visualization:
 ```bash
-python app.py
+python app/app.py
 ```
 
-## Training the Model
+## Training the Model (Lightning)
 
 1.  **Dataset:**
-    Configure `TRAIN_DATA_DIR` (image folder) and `TRAIN_LABELS_PATH` (labels CSV) in `config.py`.
+    Configure `TRAIN_DATA_DIR` (image folder) and `TRAIN_LABELS_PATH` (labels CSV) in `configs/config.py`.
 
 2.  **Configuration:**
-    Adjust training parameters (model architecture, learning rate, etc.) in `config.py`.
+    Adjust training parameters (model architecture, learning rate, etc.) in `configs/config.py`.
 
 3.  **Weights & Biases (W&B):**
     Training uses W&B for logging. You will be prompted to log in.
-    To disable W&B, set the environment variable `WANDB_MODE=disabled` before running but will limits result output:
+    To disable W&B, set the environment variable `WANDB_MODE=disabled` before running (limits result output):
     ```bash
     # $env:WANDB_MODE="disabled"; python train.py
     ```
 
-4.  **Run Training:**
+4.  **Run Training (new Lightning entrypoint):**
     ```bash
-    python train.py
+    python -m training.pl_train
     ```
+    Legacy loop (deprecated) remains at `training/train.py` and will delegate to Lightning by default.
 
-## Key Files
+## Key Files and Packages
 
-*   `app.py`: Gradio application.
-*   `train.py`: Model training script.
-*   `evaluate.py`: Evaluation logic (metrics, TTA).
-*   `dataset.py`: Data loading and augmentations.
-*   `model.py`: Neural network definition.
-*   `config.py`: Project configurations.
+*   `app/app.py`: Gradio application.
+*   `training/pl_train.py`: PyTorch Lightning training entrypoint (W&B, checkpoints).
+*   `training/pl_module.py`: LightningModule (loss/optimizer/steps, TorchMetrics).
+*   `training/pl_data.py`: LightningDataModule wrapping dataloaders.
+*   `training/train.py`: Legacy training loop (deprecated shim).
+*   `eval/evaluate.py`: Evaluation logic (metrics, ROC/CM, optional TTA).
+*   `data/dataset.py`: Data loading and timm transforms for train/val.
+*   `models/model.py`: Image+metadata fusion network definition.
+*   `models/losses.py`: Criterion factory (e.g., FocalLoss) via config.
+*   `configs/settings.py`: Pydantic BaseSettings (typed, env-friendly config).
+*   `configs/config.py`: Backward-compatible module-level constants sourced from Settings.
+*   `utils/activations.py`, `utils/metrics.py`, `utils/tta.py`: Modular utilities.
 *   `result`: path where the weights are stored
 *   `base`: path where the weights are stored
 

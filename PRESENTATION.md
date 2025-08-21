@@ -1,0 +1,167 @@
+# Melanoma Detection – Technical Presentation (Markdown Slides)
+
+---
+
+## 1) Project Overview
+
+- Goal: Assistive melanoma detection from dermoscopy images with patient metadata.
+- Outputs: Probability of malignancy + Grad-CAM heatmaps.
+- Non-diagnostic. For research/education and triage support only.
+
+---
+
+## 2) Why This Matters
+
+- Melanoma is lethal when missed; early detection improves outcomes.
+- Assist clinicians with prioritization and visual explanations.
+- Standardized pipeline enables reproducible model comparisons.
+
+---
+
+## 3) Modular Architecture (Refactor Highlights)
+
+- Training: PyTorch Lightning (PL) + TorchMetrics
+  - `training/pl_train.py`, `training/pl_module.py`, `training/pl_data.py`
+- Model: Image backbone (timm) + Metadata MLP fusion
+  - `models/model.py`
+- Config: Pydantic BaseSettings + module-level constants
+  - `configs/settings.py`, `configs/config.py`
+- Data: `timm.data.create_transform` for train/val
+  - `data/dataset.py`
+- Eval + Explainability: ROC/CM utilities + Grad-CAM (EigenCAM)
+  - `eval/evaluate.py`, `app/app.py`
+
+---
+
+## 4) Data & Features
+
+- Image: RGB dermoscopy preprocessed to `IMAGE_SIZE` (default 256).
+- Metadata: `age_approx`, `sex`, `anatom_site_general_challenge`.
+- Augmentations: Provided by `timm` transforms (train/val consistency).
+- TTA: Optional at eval; PIL-based in app.
+
+---
+
+## 5) Model Design (Fusion)
+
+- Image branch: EfficientNet-B0/DenseNet121/ResNet50 backbones (timm, pretrained, num_classes=0).
+- Metadata branch: MLP with BN+ReLU and dropout between hidden layers.
+- Fusion: Concatenate image + metadata embeddings → Linear head to 1 logit.
+- Loss: FocalLoss (configurable α, γ, reduction).
+
+---
+
+## 6) Training Setup (Lightning)
+
+- Optimizer: Adam, LR from `configs/config.py`.
+- Metrics: BinaryAccuracy, BinaryRecall, BinaryF1 (TorchMetrics).
+- Checkpointing: best `val/f1` via ModelCheckpoint.
+- Logging: Weights & Biases (project: melanoma-classification).
+
+---
+
+## 7) Experiments & Metrics (Validation)
+
+Source: `base/*/metrics`
+
+- EfficientNet-B0
+  - Acc 97.24% | Recall 88.64% | F1 89.69% | Loss 0.2757
+- DenseNet-121
+  - Acc 97.10% | Recall 88.93% | Loss 0.2401 (F1 comparable to B0)
+- ResNet-50
+  - Acc 96.25% | Recall 90.01% | F1 86.69% | Loss 0.2757
+
+Notes: Train metrics ~99% across models suggest potential overfitting; regularization and threshold tuning remain important.
+
+---
+
+## 8) Trade-offs Across Backbones
+
+- EfficientNet-B0
+  - Pros: Best F1/accuracy balance, low latency, small footprint.
+  - Cons: Slightly lower recall than ResNet-50 in this snapshot.
+- DenseNet-121
+  - Pros: Competitive loss; strong representation in medical imaging.
+  - Cons: Heavier; marginal improvements vs B0 not evident.
+- ResNet-50
+  - Pros: Highest recall (fewer false negatives).
+  - Cons: Lower F1/accuracy; heavier; may need more tuning.
+
+---
+
+## 9) Final Model Choice
+
+- Default: EfficientNet-B0 + Metadata MLP
+  - Rationale: Best overall F1/accuracy with efficient runtime and simple deployment.
+  - Practical: Stable pretrained weights; CPU-friendly for Docker + Gradio.
+- Alternate (sensitivity-first): ResNet-50 + threshold tuning/class weighting.
+
+---
+
+## 10) Inference & Explainability
+
+- App: `app/app.py` (Gradio)
+  - Single-image upload + metadata inputs.
+  - Probability output, Grad-CAM heatmaps, side-by-side visualization.
+- Explainability: EigenCAM via `pytorch-grad-cam`.
+
+---
+
+## 11) Configuration & Reproducibility
+
+- `configs/settings.py`: Pydantic settings, .env support.
+- `configs/config.py`: Backward-compatible constants.
+- Determinism flag in Lightning trainer; seeds in dataset split.
+
+---
+
+## 12) Deployment
+
+- Dockerfile: CPU-only image; compose service `web` on port 7860.
+- Volumes: `./data`, `./result`, `./base` mounted for persistence.
+- Healthcheck via `curl` to Gradio endpoint.
+
+---
+
+## 13) Risks & Mitigations
+
+- Overfitting → Use validation monitoring, augmentations, early stopping, cross-validation.
+- Spurious correlations (artifacts like rulers) → Inspect Grad-CAM, data curation.
+- Class imbalance → FocalLoss, threshold tuning, sampling strategies.
+- Domain shift → Validate on target population, consider TTA and robust transforms.
+
+---
+
+## 14) Roadmap
+
+- Cross-validation with confidence intervals.
+- Threshold optimization for task-specific recall/precision trade-offs.
+- Additional backbones (ConvNeXt-T, EfficientNetV2-S) and self-supervised pretraining.
+- ONNX/torchscript export and lightweight serving targets.
+- Add `.env` examples and experiment tracking templates.
+
+---
+
+## 15) How to Run (Quick Start)
+
+- Train (Lightning):
+  ```bash
+  python -m training.pl_train
+  ```
+- Evaluate:
+  ```bash
+  python -m eval.evaluate
+  ```
+- Serve App:
+  ```bash
+  python app/app.py
+  ```
+
+---
+
+## 16) References
+
+- Timm: https://github.com/huggingface/pytorch-image-models
+- PyTorch Lightning: https://www.lightning.ai
+- TorchMetrics: https://torchmetrics.readthedocs.io
+- Grad-CAM: https://github.com/jacobgil/pytorch-grad-cam
