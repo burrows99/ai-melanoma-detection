@@ -4,17 +4,29 @@ Deep learning model for melanoma detection from skin lesion images, incorporatin
 
 ## Docker Setup
 
-### Option 1: Using docker-compose (Recommended)
+The provided Dockerfile builds a CPU-only image. Use docker compose to run services.
 
-1. **Build and run with GPU (requires [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)):**
+### Option 1: Using docker compose (Recommended)
+
+1. **Run the web UI (Gradio):**
    ```bash
-   docker-compose up --build
+   docker compose up --build web
+   ```
+   Open http://localhost:7860
+
+2. **Run training as an on-demand service:**
+   ```bash
+   docker compose run --rm --profile cli train
    ```
 
-2. **For CPU-only mode, uncomment the CPU-specific lines in `docker-compose.yml` and run:**
+3. **Run evaluation as an on-demand service:**
    ```bash
-   docker-compose up --build
+   docker compose run --rm --profile cli eval
    ```
+
+Notes:
+- Volumes `./data`, `./base`, and `./result` are mounted into the containers.
+- Healthcheck for the web service pings http://localhost:7860.
 
 ### Option 2: Manual Docker Commands
 
@@ -28,10 +40,7 @@ Deep learning model for melanoma detection from skin lesion images, incorporatin
      ```bash
      docker run -p 7860:7860 -v $(pwd)/data:/app/data -v $(pwd)/result:/app/result melanoma-detection
      ```
-   - For GPU:
-     ```bash
-     docker run -p 7860:7860 --gpus all -v $(pwd)/data:/app/data -v $(pwd)/result:/app/result melanoma-detection
-     ```
+   - For GPU (not configured in this image): you would need a CUDA base and NVIDIA runtime.
 
 The app will be available at `http://localhost:7860`
 - Mount your data directory to `/app/data`
@@ -39,7 +48,7 @@ The app will be available at `http://localhost:7860`
 
 ## Local Setup (without Docker)
 
-The Docker workflow is recommended and already includes PyTorch from the base image `pytorch/pytorch`. PyTorch is intentionally NOT listed in `requirements.txt`.
+The Docker workflow is recommended and already includes PyTorch CPU in the image. PyTorch is intentionally NOT listed in `requirements.txt`.
 
 If you must run locally (no Docker), install PyTorch separately first, then install the rest of the requirements:
 
@@ -48,8 +57,7 @@ If you must run locally (no Docker), install PyTorch separately first, then inst
     # CPU-only
     pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cpu
 
-    # Or CUDA 11.7 (matches Dockerfile base image)
-    pip install torch==2.0.1 torchvision==0.15.2 --index-url https://download.pytorch.org/whl/cu117
+    # (Optional) CUDA builds require a matching local CUDA setup; not needed for the provided Docker image
     ```
 
 2.  **Install project dependencies (excluding PyTorch):**

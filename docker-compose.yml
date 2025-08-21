@@ -35,6 +35,35 @@ services:
     # environment:
     #   - NVIDIA_VISIBLE_DEVICES=all
 
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      shm_size: '2gb'
+    volumes:
+      - ./base:/app/base
+      - ./data:/app/data
+      - ./result:/app/result
+    environment:
+      - WANDB_MODE=disabled
+      - PYTHONUNBUFFERED=1
+    command: python -u train.py
+    profiles: ["cli"]
+
+  eval:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      shm_size: '2gb'
+    volumes:
+      - ./base:/app/base
+      - ./data:/app/data
+      - ./result:/app/result
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python -u evaluate.py
+    profiles: ["cli"]
+
   # Jupyter Notebook service - temporarily disabled
   # notebook:
   #   build: 
