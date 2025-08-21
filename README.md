@@ -2,6 +2,22 @@
 
 Deep learning model for melanoma detection from skin lesion images, incorporating patient metadata and Grad-CAM for explainability.
 
+## Use Cases
+
+- **Clinical triage (assistive)**: Provide a probability score and heatmap to help prioritize cases for expert review. Not a diagnostic device.
+- **Research experiments**: Compare backbones/augmentations; inspect Grad-CAM to detect spurious correlations (rulers, borders, hair).
+- **Education/demonstration**: Show how metadata can be fused with image features and visualized.
+
+## Example Screenshots
+
+Place screenshots under `docs/images/` and they will render here. Suggested shots:
+
+![UI Home](docs/images/ui-home.png)
+![Prediction Result](docs/images/prediction.png)
+![Grad-CAM Heatmap](docs/images/gradcam.png)
+
+If these images are missing, see `docs/README.md` for how to capture them.
+
 ## Docker Setup
 
 The provided Dockerfile builds a CPU-only image. Use docker compose to run services.
@@ -46,6 +62,12 @@ The app will be available at `http://localhost:7860`
 - Mount your data directory to `/app/data`
 - Model weights will be saved to `/app/result`
 
+## Data Requirements
+
+- Images: RGB dermoscopy photos (common formats: JPG/PNG). Default preprocessing resizes to `IMAGE_SIZE` from `config.py` (256x256 in `app.py`).
+- Optional metadata fields: `age_approx`, `sex`, `anatom_site_general_challenge`. Missing fields fall back to defaults inside `app.py`.
+- Training labels: see `config.py` for `TRAIN_LABELS_PATH` CSV expectations.
+
 ## Local Setup (without Docker)
 
 The Docker workflow is recommended and already includes PyTorch CPU in the image. PyTorch is intentionally NOT listed in `requirements.txt`.
@@ -67,6 +89,12 @@ If you must run locally (no Docker), install PyTorch separately first, then inst
 
 2.  **Model Weights for `app.py`:**
     The Gradio application (`app.py`) expects pre-trained weights at `result/weights/gradcam.pth`. If training a new model, update this path in `app.py` or rename the saved model accordingly.
+
+## Limitations and Responsible Use
+
+- This project is for research/education. It is **not** a medical device and must **not** be used for diagnosis without clinical validation.
+- Grad-CAM indicates salient regions but does not guarantee causal features.
+- Performance depends on dataset quality and distribution; always validate on your target population.
 
 ## Running the Application
 
