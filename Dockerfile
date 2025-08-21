@@ -22,7 +22,6 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY app/ app/
 COPY configs/ configs/
 COPY models/ models/
-COPY data/ data/
 COPY training/ training/
 COPY eval/ eval/
 COPY utils/ utils/
